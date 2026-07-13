@@ -2,10 +2,10 @@
 
 `yt_to_txt.py` downloads a video's auto-generated English transcript, cleans it
 (same engine as `srt.py`), and saves it as `<title>.clean.txt` in your
-transcripts folder — `~/youtube_subtitles` by default, or wherever the
+transcripts folder - `~/youtube_subtitles` by default, or wherever the
 `YT_TRANSCRIPTS_DIR` environment variable points (see `OUT_DIR` in `srt.py`).
 
-This sets up the **⌘⇧Y** hotkey using macOS's built-in **Shortcuts** app — no
+This sets up the **⌘⇧Y** hotkey using macOS's built-in **Shortcuts** app - no
 extra software to install.
 
 ## Prerequisites
@@ -34,7 +34,7 @@ extra software to install.
 5. Open the shortcut's **Details** panel (the ⓘ / sidebar toggle, top-right) →
    click **Add Keyboard Shortcut** → press **⌘⇧Y**.
 6. First run only: macOS will ask permission for the shortcut to run a shell
-   script / send notifications — click **Allow**.
+   script / send notifications - click **Allow**.
 
 ## Use it
 
@@ -45,7 +45,7 @@ finished `.txt` in your transcripts folder.
 ## Notes
 
 - Running the script directly also works and shows its own paste box:
-  `python3 yt_to_txt.py`  — or pass a URL:  `python3 yt_to_txt.py <url>`
+  `python3 yt_to_txt.py`  - or pass a URL:  `python3 yt_to_txt.py <url>`
 - Output is byte-for-byte the same format as `srt.py`'s `.clean.srt`, just `.txt`.
 - To stop Finder popping up each time, delete the `open -R` line near the
   bottom of `yt_to_txt.py`.
