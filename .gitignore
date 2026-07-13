@@ -1,0 +1,17 @@
+# macOS / Python cruft
+.DS_Store
+__pycache__/
+*.pyc
+
+# Transcript data never belongs in this repo. Outputs default to
+# ~/youtube_subtitles (outside the repo), but guard against anyone
+# pointing --out or YT_TRANSCRIPTS_DIR back in here.
+transcripts/
+research/
+*.srt
+*.clean.txt
+*.txt
+00_MANIFEST.*
+
+# ...except the junk-channel blocklist, which IS part of the tool.
+!junk_channels.txt

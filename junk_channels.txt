@@ -1,0 +1,21 @@
+# Junk-channel blocklist for yt_research.py.
+#
+# These are channels that re-upload AI-narrated clips of real interviews
+# rather than producing genuine ones -- filter them out and what's left is
+# people actually speaking in their own words. One channel per line; matched
+# case-insensitively as a substring of the channel name. Lines starting with
+# # are comments.
+#
+# This list is designed to GROW: each research run surfaces a few new
+# offenders, you add a line here, and every future run benefits. The script
+# also ships with a built-in seed list; this file extends it.
+
+Savvy Minds Connect
+LifeWorthLiving
+Savvy Finance
+EVERYDAY FINANCE
+Library Of Wealth
+Crypto Nutshell
+Money Talks
+FINANCE INSIDER
+Rock Star Real Estate
