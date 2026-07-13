@@ -20,6 +20,28 @@ grab the transcripts, clean them, and file them with receipts. Then I read — o
 have an AI assistant read with me — and walk into the call knowing what the
 person actually said, not what someone said they said.
 
+## Account intelligence: the sales use case
+
+This started as a research tool, but the highest-value use I've found is
+generating **account intelligence that isn't published anywhere else** — and
+putting it to work in deals, whether that's prospecting and outbound or
+meeting prep.
+
+Founders and executives have a tendency to discuss the topics that matter
+most — the future of the company, where priorities are shifting — on podcasts
+and conference stages that end up on YouTube. Often that's detail you won't
+find in a press release, an earnings deck, or a LinkedIn post. It gets said
+once, on camera, and then buried under an hour of small talk and a thousand
+other videos.
+
+That kind of intelligence is extremely useful in a deal: it tells you what an
+account's leadership actually cares about *right now*, in their own words. The
+problem has always been scale — nobody can spend hours sifting through YouTube
+videos to find the golden nuggets before every call. This tool collects that
+intelligence at scale: one command pulls an executive's recent appearances
+into a clean, dated corpus I can read (or interrogate with an AI assistant) in
+minutes. The sifting becomes the machine's job; the selling stays mine.
+
 ## How it works (and why each step exists)
 
 Run one command:
@@ -76,7 +98,7 @@ research/lyn_alden/
     ...
 ```
 
-## A realistic workflow: researching a company before a sales call
+## A realistic workflow: account intelligence before a call
 
 Say I have a discovery call next week with a company whose CEO does the podcast
 circuit:
@@ -87,12 +109,17 @@ circuit:
    pull the market conversation her company lives in.
 3. Skim the manifests, then feed the corpus to an AI assistant and interrogate
    it: *What does she keep repeating? What changed between the January and June
-   interviews? What does she say about the problem my product solves? What
+   interviews? What priorities does she describe that never made it into a
+   press release? What does she say about the problem my product solves? What
    questions do interviewers ask that she deflects?*
 4. Walk into the call with her own words — dated and linked — instead of a
    rehashed news summary.
 
-The same loop works for interview prep (research the hiring company's
+The same intelligence works upstream of the call, too: a cold email that opens
+with something an executive said on a podcast last month — something you can't
+find on the company's About page — earns a reply that a generic one doesn't.
+
+And the same loop covers interview prep (research the hiring company's
 leadership), competitive intel, and market research. The tool doesn't care what
 you're researching; it just guarantees the inputs are genuine and organized.
 
