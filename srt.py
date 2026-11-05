@@ -86,37 +86,63 @@ def is_youtube_url(s: str) -> bool:
 # YT_TRANSCRIPTS_DIR environment variable, or change the default below.
 OUT_DIR = Path(os.environ.get("YT_TRANSCRIPTS_DIR", "~/youtube_subtitles")).expanduser()
 
+# ── Fetching the right caption track ─────────────────────────────────────────
+# YouTube labels an English video's own automatic captions "en-orig". Plain "en"
+# (and "en.*") automatic captions are machine translations, and YouTube rate-limits
+# only those: HTTP 429 (yt-dlp issue #13831, pinned maintainer comment, 2026-01-06).
+# So: "en-orig" automatic first, then human-made "en" subtitles only.
+
+RATE_LIMITED = "rate_limited"
+NO_SUBS = "no_subs"
+BOT_CHECK = "bot_check"  # "Sign in to confirm you're not a bot": wait, don't retry hard
+TRACKS = (("en-orig", True), ("en", False))  # (track, include automatic captions)
+
+
+def fetch_caption_srt(url: str, retries: int = 2, backoff: tuple = (30, 90),
+                      extra_args: list | None = None, tracks: tuple = TRACKS):
+    """Return (raw_srt_text, status, track). status is "ok", RATE_LIMITED,
+    BOT_CHECK, NO_SUBS or "error: <tail of stderr>"."""
+    import time
+    last_err = ""
+    for track, auto in tracks:
+        for attempt in range(retries + 1):
+            with tempfile.TemporaryDirectory() as tmp:
+                tp = Path(tmp)
+                proc = subprocess.run(
+                    ['yt-dlp', *(['--write-auto-sub'] if auto else []), '--write-sub',
+                     '--sub-lang', track, '--sub-format', 'srt', '--convert-subs', 'srt',
+                     '--skip-download', '--no-playlist', *(extra_args or []),
+                     '-o', str(tp / 'v.%(ext)s'), url],
+                    capture_output=True, text=True)
+                srts = list(tp.glob('*.srt'))
+                if srts:
+                    return srts[0].read_text(encoding='utf-8', errors='replace'), "ok", track
+            err = proc.stderr or ""
+            if "confirm you" in err:
+                return None, BOT_CHECK, None
+            if "429" in err or "Too Many Requests" in err:
+                last_err = RATE_LIMITED
+                if attempt < retries:
+                    time.sleep(backoff[min(attempt, len(backoff) - 1)])
+                    continue
+                return None, RATE_LIMITED, None
+            if proc.returncode != 0 and "no subtitles" not in err.lower():
+                last_err = "error: " + err.strip()[-200:]
+            break  # this track does not exist; try the next one
+    return None, (last_err or NO_SUBS), None
+
+
 def download_subtitles(url: str) -> Path:
-    """Download auto-generated English subtitles via yt-dlp, return the .srt path."""
+    """Download English subtitles via yt-dlp, return the .srt path."""
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        result = subprocess.run(
-            [
-                'yt-dlp',
-                '--write-auto-sub',
-                '--sub-lang', 'en',
-                '--sub-format', 'srt',
-                '--convert-subs', 'srt',
-                '--skip-download',
-                '--no-playlist',
-                '-o', str(tmp_path / '%(title)s.%(ext)s'),
-                url,
-            ],
-            capture_output=True, text=True,
-        )
-        if result.returncode != 0:
-            print(result.stderr)
-            sys.exit(f"yt-dlp failed (exit {result.returncode})")
-
-        srt_files = list(tmp_path.glob('*.srt'))
-        if not srt_files:
-            sys.exit("No subtitles found for this video.")
-
-        src = srt_files[0]
-        dest = OUT_DIR / src.name
-        dest.write_bytes(src.read_bytes())
-        return dest
+    raw, status, _ = fetch_caption_srt(url)
+    if raw is None:
+        sys.exit(f"Could not get subtitles: {status}")
+    title = subprocess.run(['yt-dlp', '--no-playlist', '--print', '%(title)s', url],
+                           capture_output=True, text=True).stdout.strip() or 'video'
+    dest = OUT_DIR / (re.sub(r'[/\\:]', '_', title) + '.en.srt')
+    dest.write_text(raw, encoding='utf-8')
+    return dest
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

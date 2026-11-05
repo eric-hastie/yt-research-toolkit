@@ -39,7 +39,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 # Reuse the existing, battle-tested cleaning logic so output matches the rest
 # of the youtube_subtitles library exactly.
-from srt import parse_srt, clean_blocks, write_srt  # noqa: E402
+from srt import parse_srt, clean_blocks, write_srt, fetch_caption_srt  # noqa: E402
 
 # Corpora are built under <transcripts dir>/research/<slug>/, kept separate
 # from the code so research data never lands in version control. Override the
@@ -203,19 +203,10 @@ def download_clean(row: dict, out_dir: Path) -> dict | None:
     """Download + clean one transcript. Returns the row with file/words on
     success, or None on failure -- a single failure never aborts the batch
     (the old version's sys.exit killed every remaining download)."""
-    url = row["url"]
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        proc = subprocess.run(
-            ["yt-dlp", "--write-auto-sub", "--sub-lang", "en",
-             "--sub-format", "srt", "--convert-subs", "srt", "--skip-download",
-             "--no-playlist", "-o", str(tmp_path / "%(title)s.%(ext)s"), url],
-            capture_output=True, text=True,
-        )
-        srt_files = list(tmp_path.glob("*.srt"))
-        if proc.returncode != 0 or not srt_files:
-            return None
-        raw = srt_files[0].read_text(encoding="utf-8", errors="replace")
+    raw, status, _ = fetch_caption_srt(row["url"])
+    if raw is None:
+        print(f"      no transcript for {row['id']}: {status}", flush=True)
+        return None
     blocks = clean_blocks(parse_srt(raw))
     if not blocks:
         return None
