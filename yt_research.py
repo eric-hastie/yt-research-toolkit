@@ -109,15 +109,28 @@ def safe_name(text: str, maxlen: int = 24) -> str:
     return text[:maxlen] or "Unknown"
 
 
-def search_ids(query: str, mode: str, candidates: int) -> list[str]:
+def upload_filter(since_days: int) -> str:
+    """YouTube's own "upload date" search filter for a window: this week, this month or this year.
+    Codes taken from last30days (mvanhorn/last30days-skill, youtube_yt.py:862).
+    Empty when there is no window or it is longer than a year (no filter is narrow enough)."""
+    if since_days <= 0 or since_days > 365:
+        return ""
+    return "EgIIAw%253D%253D" if since_days <= 7 else (
+        "EgIIBA%253D%253D" if since_days <= 31 else "EgIIBQ%253D%253D")
+
+
+def search_ids(query: str, mode: str, candidates: int, sp: str = "") -> list[str]:
     """Return candidate video IDs from a YouTube search.
 
     person -> sort by upload date (most recent first).
     topic  -> default relevance sort (surfaces the best sources across voices).
+    sp     -> an explicit YouTube search filter, e.g. upload_filter().
     """
     from urllib.parse import quote_plus
     base = f"https://www.youtube.com/results?search_query={quote_plus(query)}"
-    if mode == "person":
+    if sp:
+        base += f"&sp={sp}"
+    elif mode == "person":
         base += "&sp=CAI%253D"  # sort by upload date
     proc = subprocess.run(
         ["yt-dlp", "--flat-playlist", "--print", "%(id)s",
@@ -258,6 +271,17 @@ def main() -> None:
 
     print("[3/4] filtering junk + selecting...", flush=True)
     selected, dropped = select(rows, mode, args.n, args.min_minutes * 60, since_days)
+    # Topic search ranks by relevance, so a short window can leave too few recent videos. One more
+    # search with YouTube's own upload-date filter tops it up (idea from last30days).
+    sp = upload_filter(since_days) if mode == "topic" else ""
+    if sp and len(selected) < args.n:
+        have = {r["id"] for r in rows}
+        extra = [i for i in search_ids(args.query, mode, candidates, sp) if i not in have]
+        if extra:
+            rows = rows + fetch_metadata(extra)
+            selected, dropped = select(rows, mode, args.n, args.min_minutes * 60, since_days)
+            print(f"      only {len(selected)} in window after the upload-date search "
+                  f"(added {len(extra)} new candidates)", flush=True)
     print(f"      kept {len(selected)}, dropped {len(dropped)}", flush=True)
     for r in selected:
         print(f"        {r['upload_date']:>8}  {r['duration']//60:>3}m  "

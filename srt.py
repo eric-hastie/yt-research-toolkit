@@ -99,9 +99,14 @@ TRACKS = (("en-orig", True), ("en", False))  # (track, include automatic caption
 
 
 def fetch_caption_srt(url: str, retries: int = 2, backoff: tuple = (30, 90),
-                      extra_args: list | None = None, tracks: tuple = TRACKS):
+                      extra_args: list | None = None, tracks: tuple = TRACKS,
+                      info: dict | None = None):
     """Return (raw_srt_text, status, track). status is "ok", RATE_LIMITED,
-    BOT_CHECK, NO_SUBS or "error: <tail of stderr>"."""
+    BOT_CHECK, NO_SUBS or "error: <tail of stderr>".
+    info: pass an empty dict to have it filled with the video's details (title,
+    channel, upload_date, duration, ...) from the SAME request that fetches the
+    captions, so a caller never needs a second request per video."""
+    import json
     import time
     last_err = ""
     for track, auto in tracks:
@@ -111,9 +116,16 @@ def fetch_caption_srt(url: str, retries: int = 2, backoff: tuple = (30, 90),
                 proc = subprocess.run(
                     ['yt-dlp', *(['--write-auto-sub'] if auto else []), '--write-sub',
                      '--sub-lang', track, '--sub-format', 'srt', '--convert-subs', 'srt',
-                     '--skip-download', '--no-playlist', *(extra_args or []),
+                     '--skip-download', '--no-playlist',
+                     *(['--write-info-json'] if info is not None else []), *(extra_args or []),
                      '-o', str(tp / 'v.%(ext)s'), url],
                     capture_output=True, text=True)
+                if info is not None and not info:
+                    for ij in tp.glob('*.info.json'):
+                        try:
+                            info.update(json.loads(ij.read_text(encoding='utf-8')))
+                        except Exception:
+                            pass
                 srts = list(tp.glob('*.srt'))
                 if srts:
                     return srts[0].read_text(encoding='utf-8', errors='replace'), "ok", track
@@ -135,11 +147,11 @@ def fetch_caption_srt(url: str, retries: int = 2, backoff: tuple = (30, 90),
 def download_subtitles(url: str) -> Path:
     """Download English subtitles via yt-dlp, return the .srt path."""
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    raw, status, _ = fetch_caption_srt(url)
+    info = {}  # the caption request also returns the title: one request per video, not two
+    raw, status, _ = fetch_caption_srt(url, info=info)
     if raw is None:
         sys.exit(f"Could not get subtitles: {status}")
-    title = subprocess.run(['yt-dlp', '--no-playlist', '--print', '%(title)s', url],
-                           capture_output=True, text=True).stdout.strip() or 'video'
+    title = (info.get('title') or '').strip() or 'video'
     dest = OUT_DIR / (re.sub(r'[/\\:]', '_', title) + '.en.srt')
     dest.write_text(raw, encoding='utf-8')
     return dest
